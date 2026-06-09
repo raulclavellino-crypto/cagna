@@ -186,6 +186,8 @@
       background: rgba(246,241,232,.55);
     }
     .cloud-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .stack-actions { display: grid; gap: 10px; }
+    .stack-actions .btn { width: 100%; justify-content: center; }
     .login-gate {
       position: fixed;
       inset: 0;
@@ -910,14 +912,64 @@
       pill.innerHTML = `<span class="cloud-dot"></span>${cloudSaving ? "Guardando..." : "Nube activa"}`;
     }
     function resetState() {
-      if (!confirm("Esto borra los cambios cargados y vuelve a los datos iniciales. ¿Continuar?")) return;
+      if (!confirm("Esto borra los cambios cargados y vuelve a los datos iniciales de ejemplo. ¿Continuar?")) return;
       localStorage.removeItem("cagna-junin-state");
       state = structuredClone(seed);
       state.dismissedNotifications = [];
       editingProductId = "";
       editingClientId = "";
       catalogSelected = state.products.filter(p => p.active && p.stock > 0).map(p => p.id);
+      saveState();
       toast("Datos reiniciados");
+      render();
+    }
+
+    function clearSales() {
+      if (!confirm("Esto deja el historial de ventas en cero y limpia los movimientos generados por ventas. Los productos y el stock actual quedan igual. ¿Continuar?")) return;
+      state.sales = [];
+      state.movements = state.movements.filter(item => item.type !== "Salida por venta");
+      state.clients = state.clients.map(client => ({ ...client, purchases: [] }));
+      state.dismissedNotifications = [];
+      saveState();
+      toast("Ventas en cero");
+      render();
+    }
+
+    function clearOrders() {
+      if (!confirm("Esto borra todos los pedidos cargados. ¿Continuar?")) return;
+      state.orders = [];
+      state.dismissedNotifications = [];
+      saveState();
+      toast("Pedidos borrados");
+      render();
+    }
+
+    function clearClients() {
+      if (!confirm("Esto borra todos los clientes cargados. Las ventas históricas no se modifican. ¿Continuar?")) return;
+      state.clients = [];
+      editingClientId = "";
+      saveState();
+      toast("Clientes borrados");
+      render();
+    }
+
+    function startBlankState() {
+      if (!confirm("Esto deja la app completamente vacía: borra productos, ventas, pedidos, clientes y movimientos. Es ideal para empezar a cargar todo real desde cero. ¿Continuar?")) return;
+      state = {
+        products: [],
+        clients: [],
+        sales: [],
+        orders: [],
+        movements: [],
+        dismissedNotifications: []
+      };
+      editingProductId = "";
+      editingClientId = "";
+      productImageDraft = "";
+      catalogSelected = [];
+      saleLines = [{ productId: "", quantity: 1 }];
+      saveState();
+      toast("App lista para cargar desde cero");
       render();
     }
     function uid(prefix) { return prefix + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6); }
@@ -1798,10 +1850,23 @@
           ${field("Canal principal", `<input value="WhatsApp e Instagram" readonly>`)}
         </div>
         <div class="card">
-          <div class="card-head"><h2>Mantenimiento</h2></div>
-          <p class="subtitle">Los cambios quedan guardados en este navegador. Si querés empezar de cero, podés reiniciar los datos.</p>
+          <div class="card-head"><h2>Limpieza rápida</h2></div>
+          <p class="subtitle">Usá estas opciones para sacar datos de prueba sin tocar toda la app.</p>
           <br>
-          <button class="btn danger" onclick="resetState()">${icons.trash}Reiniciar datos</button>
+          <div class="stack-actions">
+            <button class="btn danger" onclick="clearSales()">${icons.trash}Ventas en cero</button>
+            <button class="btn secondary" onclick="clearOrders()">${icons.trash}Borrar pedidos</button>
+            <button class="btn secondary" onclick="clearClients()">${icons.trash}Borrar clientes</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Empezar limpio</h2></div>
+          <p class="subtitle">Deja la app vacía para cargar productos, stock, clientes, ventas y pedidos reales desde cero.</p>
+          <br>
+          <div class="stack-actions">
+            <button class="btn danger" onclick="startBlankState()">${icons.trash}Dejar app vacía</button>
+            <button class="btn secondary" onclick="resetState()">${icons.stock}Volver a datos de ejemplo</button>
+          </div>
         </div>
         <div class="card">
           <div class="card-head"><h2>Guardado en la nube</h2></div>
