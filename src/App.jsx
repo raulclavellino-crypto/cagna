@@ -294,7 +294,9 @@ function Sidebar({ activePage, setActivePage }) {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand-logo">CJ</div>
+        <div className="brand-logo">
+  <img src="/cagna_junin_logo.png" alt="Cagna Junín" />
+</div>
         <h1>Cagna Junín</h1>
         <p>Artesanía · Tradición · Calidad</p>
       </div>
