@@ -64,9 +64,18 @@ button {
   box-shadow: inset 0 0 0 1px rgba(190, 145, 50, 0.15);
 }
 
+.brand-logo {
+  width: 108px;
+  height: 108px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .brand-logo img {
-  width: 100%;
-  height: 100%;
+  width: 78%;
+  height: 78%;
   object-fit: contain;
   display: block;
 }
