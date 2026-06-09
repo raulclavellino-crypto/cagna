@@ -553,14 +553,78 @@
       .stock-grid, .client-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 720px) {
-      .main { padding: 14px; }
-      .topbar { flex-wrap: wrap; }
-      .search { order: 3; flex-basis: 100%; }
-      .grid-4, .quick-actions, .products-grid, .form-grid, .report-controls { grid-template-columns: 1fr; }
+      body { background: var(--bg); }
+      .app { min-height: 100vh; }
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 25;
+        padding: 10px 12px 8px;
+        gap: 9px;
+        border-right: 0;
+        border-bottom: 1px solid rgba(255,255,255,.08);
+      }
+      .brand {
+        display: grid;
+        grid-template-columns: 44px minmax(0,1fr);
+        align-items: center;
+        text-align: left;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 17px;
+      }
+      .brand-logo { width: 44px; height: 44px; border-radius: 14px; margin: 0; }
+      .brand h1 { font-size: 23px; }
+      .brand p { font-size: 8px; }
+      .menu {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+      }
+      .menu::-webkit-scrollbar { display: none; }
+      .menu button {
+        min-width: 112px;
+        width: auto;
+        min-height: 38px;
+        justify-content: center;
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+      .menu button:hover, .menu button.active { transform: none; }
+      .sidebar-note { display: none; }
+      .main { padding: 12px; gap: 14px; }
+      .topbar { flex-wrap: wrap; gap: 10px; }
+      .search { order: 1; flex-basis: 100%; height: 46px; border-radius: 14px; }
+      .cloud-pill { order: 2; min-height: 38px; }
+      .top-button { order: 3; width: 46px; height: 46px; border-radius: 14px; }
+      .profile { order: 4; height: 46px; margin-left: auto; padding: 6px 8px; }
+      .crumb { display: none; }
+      #app { gap: 14px; }
+      .card { padding: 16px; border-radius: 16px; }
+      .grid-4, .quick-actions, .products-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+      .form-grid, .report-controls { grid-template-columns: 1fr; }
+      .kpi { min-height: 96px; padding: 13px; }
+      .kpi-top { gap: 9px; }
+      .kpi-icon { width: 34px; height: 34px; border-radius: 12px; }
+      .kpi-value { font-size: 20px; }
+      .quick { min-height: 70px; padding: 10px 8px; }
+      .quick svg { width: 22px; height: 22px; }
+      .product-image { height: 88px; padding: 9px; align-items: center; font-size: 11px; }
+      .product-body { padding: 10px; gap: 6px; }
+      .product-title { min-height: 0; font-size: 14px; }
+      .desc { display: none; }
+      .price { font-size: 18px; }
+      .tag, .status { padding: 5px 8px; font-size: 11px; }
       .profile small, .profile strong { display: none; }
       .sale-line, .order-row, .select-row, .bar { grid-template-columns: 1fr; }
-      .title { font-size: 27px; }
+      .title { font-size: 25px; }
+      .subtitle { font-size: 14px; }
       .notifications-panel { top: 78px; right: 14px; width: calc(100vw - 28px); }
+    }
+    @media (max-width: 420px) {
+      .grid-4 { grid-template-columns: 1fr; }
+      .products-grid { grid-template-columns: 1fr; }
     }
     #app { display: flex; flex-direction: column; gap: 28px; }
     .modal-backdrop {
@@ -721,6 +785,10 @@
       ["configuracion", "Configuración", "settings"]
     ];
 
+    const defaultSettings = {
+      stockAlertThreshold: 7
+    };
+
     const seed = {
       products: [
         ["Yerba Baldo 1kg","Yerbas",3500,2200,28,"unidad","Yerba uruguaya intensa, estacionada y con molienda equilibrada."],
@@ -761,7 +829,8 @@
       movements: [
         { id:"mov-1", dateISO: todayISO(), productId:"prod-5", productName:"Yerba Export 500g", type:"Ingreso de stock", quantity:12, note:"Reposición semanal" },
         { id:"mov-2", dateISO: todayISO(), productId:"prod-1", productName:"Mate de Algarrobo", type:"Salida por venta", quantity:-1, note:"Venta registrada" }
-      ]
+      ],
+      settings: { ...defaultSettings }
     };
 
     let state = loadState();
@@ -790,6 +859,7 @@
         const saved = JSON.parse(localStorage.getItem("cagna-junin-state") || "null");
         if (saved && saved.products && saved.sales) {
           saved.dismissedNotifications ||= [];
+          saved.settings = { ...defaultSettings, ...(saved.settings || {}) };
           saved.products = saved.products.map(product => ({
             ...product,
             image: String(product.image || "").startsWith("blob:") ? "" : product.image
@@ -829,6 +899,7 @@
         if (validAppState(data?.app_state)) {
           state = { ...structuredClone(seed), ...data.app_state };
           state.dismissedNotifications ||= [];
+          state.settings = { ...defaultSettings, ...(state.settings || {}) };
           localStorage.setItem("cagna-junin-state", JSON.stringify(state));
           catalogSelected = state.products.filter(p => p.active && p.stock > 0).map(p => p.id);
           saleLines = [{ productId: state.products.find(p => p.active)?.id || state.products[0]?.id || "", quantity: 1 }];
@@ -916,6 +987,7 @@
       localStorage.removeItem("cagna-junin-state");
       state = structuredClone(seed);
       state.dismissedNotifications = [];
+      state.settings = { ...defaultSettings };
       editingProductId = "";
       editingClientId = "";
       catalogSelected = state.products.filter(p => p.active && p.stock > 0).map(p => p.id);
@@ -961,7 +1033,8 @@
         sales: [],
         orders: [],
         movements: [],
-        dismissedNotifications: []
+        dismissedNotifications: [],
+        settings: { ...defaultSettings }
       };
       editingProductId = "";
       editingClientId = "";
@@ -974,6 +1047,21 @@
     }
     function uid(prefix) { return prefix + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6); }
     function money(value) { return new Intl.NumberFormat("es-AR", { style:"currency", currency:"ARS", maximumFractionDigits:0 }).format(Number(value || 0)); }
+    function stockAlertThreshold() {
+      return Math.max(0, Number(state.settings?.stockAlertThreshold ?? defaultSettings.stockAlertThreshold));
+    }
+    function lowStockProducts() {
+      const threshold = stockAlertThreshold();
+      return state.products.filter(p => Number(p.stock) <= threshold);
+    }
+    function saveStockAlertThreshold() {
+      const next = Math.max(0, Math.floor(Number(val("stock-threshold") || 0)));
+      state.settings = { ...defaultSettings, ...(state.settings || {}), stockAlertThreshold: next };
+      state.dismissedNotifications = [];
+      saveState();
+      toast(`Stock bajo: ${next} unidades o menos`);
+      render();
+    }
     function paymentLabel(kind) { return paymentKinds.find(item => item.value === kind)?.label || "Efectivo / transferencia"; }
     function paymentMultiplier(kind) { return kind === "tarjeta" ? 1.15 : 1; }
     function priceForPayment(price, kind) { return Math.round(Number(price || 0) * paymentMultiplier(kind)); }
@@ -1055,7 +1143,7 @@
     function renderNotifications() {
       const panel = document.getElementById("notificationsPanel");
       if (!panel) return;
-      const lowStock = state.products.filter(p => p.stock <= 7);
+      const lowStock = lowStockProducts();
       const pendingOrders = state.orders.filter(o => ["Nuevo", "Pendiente de pago"].includes(o.status));
       const items = [
         ...lowStock.map(p => ({
@@ -1080,7 +1168,7 @@
 
     function visibleNotificationCount() {
       const dismissed = state.dismissedNotifications || [];
-      const lowStock = state.products.filter(p => p.stock <= 7).map(p => `stock-${p.id}`);
+      const lowStock = lowStockProducts().map(p => `stock-${p.id}`);
       const pendingOrders = state.orders.filter(o => ["Nuevo", "Pendiente de pago"].includes(o.status)).map(o => `order-${o.id}`);
       return [...lowStock, ...pendingOrders].filter(id => !dismissed.includes(id)).length;
     }
@@ -1092,7 +1180,7 @@
     }
 
     function dismissAllNotifications() {
-      const lowStock = state.products.filter(p => p.stock <= 7).map(p => `stock-${p.id}`);
+      const lowStock = lowStockProducts().map(p => `stock-${p.id}`);
       const pendingOrders = state.orders.filter(o => ["Nuevo", "Pendiente de pago"].includes(o.status)).map(o => `order-${o.id}`);
       state.dismissedNotifications = [...new Set([...(state.dismissedNotifications || []), ...lowStock, ...pendingOrders])];
       saveState();
@@ -1173,7 +1261,8 @@
     }
 
     function dashboardPage() {
-      const lowStock = state.products.filter(p => p.stock <= 7);
+      const threshold = stockAlertThreshold();
+      const lowStock = lowStockProducts();
       return `
         <section class="card">
           <h1 class="title">Panel de gestión</h1>
@@ -1200,7 +1289,7 @@
             <div class="card-head"><h2>Stock y actividad</h2></div>
             <div class="stock-grid">
               <div>
-                <span class="pill">Stock bajo</span>
+                <span class="pill">Stock bajo: ${threshold} o menos</span>
                 <br><br>
                 ${lowStock.length ? lowStock.slice(0, 4).map(p => `<div class="metric-row">${icons.bell}<div><strong>${safe(p.name)}</strong><span>${p.stock} ${safe(p.unit)} disponibles</span></div></div>`).join("") : `<div class="empty">Sin productos críticos.</div>`}
               </div>
@@ -1539,7 +1628,7 @@
       const product = state.products.find(p => p.id === val("order-product"));
       const qty = Number(val("order-qty"));
       if (!val("order-client").trim() || !product || qty <= 0) return toast("Completá cliente, producto y cantidad");
-      state.orders.unshift({
+      const order = {
         id: uid("ord"),
         dateISO: val("order-date") || todayISO(),
         client: val("order-client"),
@@ -1548,10 +1637,15 @@
         total: product.price * qty,
         status: val("order-status"),
         notes: val("order-notes")
-      });
+      };
+      if (order.status === "Entregado") {
+        if (!completeOrderAsSale(order, false)) return;
+      } else {
+        state.orders.unshift(order);
+      }
       saveState();
       if (currentModal) closeModal();
-      toast("Pedido guardado");
+      toast(order.status === "Entregado" ? "Pedido pasado a venta" : "Pedido guardado");
       render();
     }
     function orderRow(order) {
@@ -1563,10 +1657,56 @@
     }
     function changeOrderStatus(id, status) {
       const order = state.orders.find(o => o.id === id);
-      if (order) order.status = status;
+      if (!order) return;
+      if (status === "Entregado") {
+        if (!confirm("Al marcarlo como entregado, se registra como venta y sale de pedidos. ¿Continuar?")) {
+          render();
+          return;
+        }
+        if (!completeOrderAsSale(order, true)) {
+          render();
+          return;
+        }
+        toast("Pedido pasado a ventas");
+      } else {
+        order.status = status;
+        toast("Estado actualizado");
+      }
       saveState();
-      toast("Estado actualizado");
       render();
+    }
+    function completeOrderAsSale(order, removeOrder) {
+      const totalsByProduct = {};
+      for (const item of order.items) {
+        totalsByProduct[item.productId] = (totalsByProduct[item.productId] || 0) + Number(item.quantity || 0);
+      }
+      for (const [pid, qty] of Object.entries(totalsByProduct)) {
+        const product = state.products.find(p => p.id === pid);
+        if (!product || Number(product.stock) < qty) {
+          toast("No hay stock suficiente para completar el pedido");
+          return false;
+        }
+      }
+      const sale = {
+        id: uid("sale"),
+        dateISO: todayISO(),
+        client: order.client || "Sin cliente",
+        method: "Pedido entregado",
+        paymentKind: "pedido",
+        promo: "",
+        items: order.items.map(item => ({ ...item })),
+        total: order.items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0)
+      };
+      for (const item of sale.items) {
+        const product = state.products.find(p => p.id === item.productId);
+        product.stock = Math.max(0, Number(product.stock) - Number(item.quantity || 0));
+        state.movements.unshift({ id: uid("mov"), dateISO: sale.dateISO, productId: product.id, productName: product.name, type:"Salida por venta", quantity:-Number(item.quantity || 0), note:"Pedido entregado" });
+      }
+      const client = state.clients.find(c => c.name === sale.client);
+      if (client) client.purchases = [...new Set([...(client.purchases || []), ...sale.items.map(i => i.name)])];
+      state.sales.unshift(sale);
+      if (removeOrder) state.orders = state.orders.filter(item => item.id !== order.id);
+      return true;
     }
     function deleteOrder(id) {
       if (!confirm("¿Eliminar este pedido?")) return;
@@ -1848,6 +1988,14 @@
           ${field("Rubro", `<input value="Mates, yerbas, termos y accesorios" readonly>`)}
           <br>
           ${field("Canal principal", `<input value="WhatsApp e Instagram" readonly>`)}
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Alertas de stock</h2></div>
+          <p class="subtitle">Elegí desde cuántas unidades la app debe avisarte que un producto está bajo de stock.</p>
+          <br>
+          ${field("Notificar cuando queden", `<input id="stock-threshold" type="number" min="0" step="1" value="${stockAlertThreshold()}">`)}
+          <br>
+          <button class="btn gold" onclick="saveStockAlertThreshold()">${icons.check}Guardar alerta</button>
         </div>
         <div class="card">
           <div class="card-head"><h2>Limpieza rápida</h2></div>
